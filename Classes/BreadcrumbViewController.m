@@ -5,7 +5,7 @@
     Displays the user location along with the path traveled on an MKMapView.
     Implements the MKMapViewDelegate messages for tracking user location and managing overlays.
      
-  Version: 1.2 
+  Version: 1.3 
   
  Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple 
  Inc. ("Apple") in consideration of your agreement to the following 
@@ -45,7 +45,7 @@
  STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE 
  POSSIBILITY OF SUCH DAMAGE. 
   
- Copyright (C) 2010 Apple Inc. All Rights Reserved. 
+ Copyright (C) 2011 Apple Inc. All Rights Reserved. 
   
  */
 
@@ -58,6 +58,7 @@
 @interface BreadcrumbViewController()
 - (void)setSessionActiveWithMixing:(BOOL)duckIfOtherAudioIsPlaying;
 - (void)playSound;
+- (void)flipAction:(id)sender;
 static void interruptionListener(void *inClientData, UInt32 inInterruption);
 @end
 
@@ -112,7 +113,7 @@ static void interruptionListener(void *inClientData, UInt32 inInterruption);
     // add our custom flip button as the nav bar's custom right view
 	UIButton* infoButton = [UIButton buttonWithType:UIButtonTypeInfoLight];
     CGRect frame = infoButton.frame;
-    frame.size.width = 40.0;
+    frame.size.width = 40.0f;
     infoButton.frame = frame;
 	[infoButton addTarget:self action:@selector(flipAction:) forControlEvents:UIControlEventTouchUpInside];
 	flipButton = [[UIBarButtonItem alloc] initWithCustomView:infoButton];
@@ -209,7 +210,7 @@ static void interruptionListener(void *inClientData, UInt32 inInterruption);
 - (void)flipAction:(id)sender
 {
 	[UIView setAnimationDelegate:self];
-	[UIView setAnimationDidStopSelector:@selector(animationDidStop:animationIDfinished:finished:context:)];
+	//••[UIView setAnimationDidStopSelector:@selector(animationDidStop:animationIDfinished:finished:context:)];
 	[UIView beginAnimations:nil context:nil];
 	[UIView setAnimationDuration:0.75];
 	
@@ -286,7 +287,7 @@ static void interruptionListener(void *inClientData, UInt32 inInterruption);
                 {
                     // There is a non null update rect.
                     // Compute the currently visible map zoom scale
-                    MKZoomScale currentZoomScale = map.bounds.size.width / map.visibleMapRect.size.width;
+                    MKZoomScale currentZoomScale = (CGFloat)(map.bounds.size.width / map.visibleMapRect.size.width);
                     // Find out the line width at this zoom scale and outset the updateRect by that amount
                     CGFloat lineWidth = MKRoadWidthAtZoomScale(currentZoomScale);
                     updateRect = MKMapRectInset(updateRect, -lineWidth, -lineWidth);

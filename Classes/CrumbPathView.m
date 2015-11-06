@@ -4,7 +4,7 @@
  CrumbPathView is an MKOverlayView subclass that displays a path that changes over time.
  This class also demonstrates the fastest way to convert a list of MKMapPoints into a CGPath for drawing in an overlay view.
   
-  Version: 1.2 
+  Version: 1.3 
   
  Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple 
  Inc. ("Apple") in consideration of your agreement to the following 
@@ -44,7 +44,7 @@
  STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE 
  POSSIBILITY OF SUCH DAMAGE. 
   
- Copyright (C) 2010 Apple Inc. All Rights Reserved. 
+ Copyright (C) 2011 Apple Inc. All Rights Reserved. 
   
  */
 
@@ -83,7 +83,7 @@
     if (path != nil)
     {
         CGContextAddPath(context, path);
-        CGContextSetRGBStrokeColor(context, 0, 0, 1.0, 0.5);
+        CGContextSetRGBStrokeColor(context, 0.0f, 0.0f, 1.0f, 0.5f);
         CGContextSetLineJoin(context, kCGLineJoinRound);
         CGContextSetLineCap(context, kCGLineCapRound);
         CGContextSetLineWidth(context, lineWidth);
