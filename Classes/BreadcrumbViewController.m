@@ -5,7 +5,7 @@
     Displays the user location along with the path traveled on an MKMapView.
     Implements the MKMapViewDelegate messages for tracking user location and managing overlays.
      
-  Version: 1.1 
+  Version: 1.2 
   
  Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple 
  Inc. ("Apple") in consideration of your agreement to the following 
@@ -51,20 +51,39 @@
 
 #import "BreadcrumbViewController.h"
 
-#define kTransitionDuration	0.75    // for the flip view animation
+#import <AudioToolbox/AudioToolbox.h>
 
 #pragma mark -
+
+@interface BreadcrumbViewController()
+- (void)setSessionActiveWithMixing:(BOOL)duckIfOtherAudioIsPlaying;
+- (void)playSound;
+static void interruptionListener(void *inClientData, UInt32 inInterruption);
+@end
+
 
 @implementation BreadcrumbViewController
 
 @synthesize flipButton, doneButton, containerView, map,
-            instructionsView, toggleBackgroundButton,
-            locationManager;
+            instructionsView, toggleBackgroundButton, toggleNavigationAccuracyButton, toggleAudioButton,
+			locationManager, audioPlayer;
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
     
+	// initialize our AudioSession. this function has to be called once before calling any other AudioSession functions
+	AudioSessionInitialize(NULL, NULL, interruptionListener, NULL);
+	
+	// set our default audio session state
+	[self setSessionActiveWithMixing:NO];
+	
+	NSURL *url = [NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"Hero" ofType:@"aiff"]];
+    self.audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:url error:nil];
+    self.audioPlayer.delegate = self;	// so we know when the sound finishes playing
+	
+	okToPlaySound = YES;
+	
     // Note: we are using Core Location directly to get the user location updates.
     // We could normally use MKMapView's user location update delegation but this does not work in
     // the background.  Plus we want "kCLLocationAccuracyBestForNavigation" which gives us a better accuracy.
@@ -72,11 +91,15 @@
     self.locationManager = [[[CLLocationManager alloc] init] autorelease];
     self.locationManager.delegate = self; // Tells the location manager to send updates to this object
     
-    // Use the highest possible accuracy and combine it with additional sensor data.
-    // This level of accuracy is intended for use in navigation applications that require precise
-    // position information at all times and are intended to be used only while the device is plugged in.
+    // By default use the best accuracy setting (kCLLocationAccuracyBest)
+	//
+	// You mau instead want to use kCLLocationAccuracyBestForNavigation, which is the highest possible
+	// accuracy and combine it with additional sensor data.  Note that level of accuracy is intended
+	// for use in navigation applications that require precise position information at all times and
+	// are intended to be used only while the device is plugged in.
     //
-    self.locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation;
+    BOOL navigationAccuracy = [self.toggleNavigationAccuracyButton isOn];
+	self.locationManager.desiredAccuracy = (navigationAccuracy ? kCLLocationAccuracyBestForNavigation : kCLLocationAccuracyBest);
     
     [self.locationManager startUpdatingLocation];
     
@@ -112,8 +135,14 @@
     self.locationManager.delegate = nil;
     self.locationManager = nil;
     
-    [flipButton release];
-    [doneButton release];
+	self.flipButton = nil;
+	self.doneButton = nil;
+	
+	self.audioPlayer = nil;
+	
+	self.toggleBackgroundButton = nil;
+	self.toggleNavigationAccuracyButton = nil;
+	self.toggleAudioButton = nil;
 }
 
 - (void)dealloc
@@ -123,7 +152,6 @@
     
     [containerView release];
     [map release];
-    [instructionsView release];
     
     [flipButton release];
     [doneButton release];
@@ -131,6 +159,13 @@
     self.locationManager.delegate = nil;
     [locationManager release];
     
+	[audioPlayer release];
+	
+	[instructionsView release];
+	[toggleBackgroundButton release];
+	[toggleNavigationAccuracyButton release];
+	[toggleAudioButton release];
+	
     [super dealloc];
 }
 
@@ -176,7 +211,7 @@
 	[UIView setAnimationDelegate:self];
 	[UIView setAnimationDidStopSelector:@selector(animationDidStop:animationIDfinished:finished:context:)];
 	[UIView beginAnimations:nil context:nil];
-	[UIView setAnimationDuration:kTransitionDuration];
+	[UIView setAnimationDuration:0.75];
 	
 	[UIView setAnimationTransition:([self.map superview] ?
 									UIViewAnimationTransitionFlipFromLeft : UIViewAnimationTransitionFlipFromRight)
@@ -211,7 +246,13 @@
 {
     if (newLocation)
     {
-        // make sure the old and new coordinates are different
+        if ([self.toggleAudioButton isOn])
+		{
+			[self setSessionActiveWithMixing:YES]; // YES == duck if other audio is playing
+			[self playSound];
+		}
+		
+		// make sure the old and new coordinates are different
         if ((oldLocation.coordinate.latitude != newLocation.coordinate.latitude) &&
             (oldLocation.coordinate.longitude != newLocation.coordinate.longitude))
         {    
@@ -225,7 +266,7 @@
                 
                 // On the first location update only, zoom map to user location
                 MKCoordinateRegion region = 
-                MKCoordinateRegionMakeWithDistance(newLocation.coordinate, 2000, 2000);
+					MKCoordinateRegionMakeWithDistance(newLocation.coordinate, 2000, 2000);
                 [map setRegion:region animated:YES];
             }
             else
@@ -264,6 +305,52 @@
         crumbView = [[CrumbPathView alloc] initWithOverlay:overlay];
     }
     return crumbView;
+}
+
+
+#pragma mark -
+#pragma mark Audio Support
+
+static void interruptionListener(void *inClientData, UInt32 inInterruption)
+{
+	printf("Session interrupted: --- %s ---",
+		   inInterruption == kAudioSessionBeginInterruption ? "Begin Interruption" : "End Interruption");
+}
+
+- (void)setSessionActiveWithMixing:(BOOL)duckIfOtherAudioIsPlaying
+{
+    UInt32 value = kAudioSessionCategory_MediaPlayback;
+    AudioSessionSetProperty(kAudioSessionProperty_AudioCategory, sizeof(value), &value);   
+    
+    // required if using kAudioSessionCategory_MediaPlayback
+    value = YES;
+    AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof(value), &value);
+    
+    UInt32 isOtherAudioPlaying = 0;
+    UInt32 size = sizeof(isOtherAudioPlaying);
+    AudioSessionGetProperty(kAudioSessionProperty_OtherAudioIsPlaying, &size, &isOtherAudioPlaying);
+    
+    if (isOtherAudioPlaying && duckIfOtherAudioIsPlaying)
+	{
+        AudioSessionSetProperty(kAudioSessionProperty_OtherMixableAudioShouldDuck, sizeof(value), &value); 
+    }
+    AudioSessionSetActive(YES);
+}
+
+- (void)playSound
+{
+	if (self.audioPlayer && okToPlaySound)
+    {
+        okToPlaySound = NO;
+		[self.audioPlayer prepareToPlay];
+		[self.audioPlayer play];
+    }
+}
+
+- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag
+{
+    AudioSessionSetActive(NO);
+	okToPlaySound = YES;
 }
 
 @end

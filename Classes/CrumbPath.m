@@ -1,7 +1,7 @@
 /*
      File: CrumbPath.m 
  Abstract: CrumbPath is an MKOverlay model class representing a path that changes over time. 
-  Version: 1.1 
+  Version: 1.2 
   
  Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple 
  Inc. ("Apple") in consideration of your agreement to the following 

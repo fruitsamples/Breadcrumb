@@ -5,7 +5,7 @@ Abstract:
     Displays the user location along with the path traveled on an MKMapView.
     Implements the MKMapViewDelegate messages for tracking user location and managing overlays.
     
- Version: 1.1
+ Version: 1.2
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Inc. ("Apple") in consideration of your agreement to the following
@@ -51,12 +51,14 @@ Copyright (C) 2010 Apple Inc. All Rights Reserved.
 
 #import <UIKit/UIKit.h>
 #import <MapKit/MapKit.h>
+#import <AVFoundation/AVFoundation.h>
 
 #import "CrumbPath.h"
 #import "CrumbPathView.h"
 
-@interface BreadcrumbViewController : UIViewController <MKMapViewDelegate, CLLocationManagerDelegate>
+@interface BreadcrumbViewController : UIViewController <MKMapViewDelegate, CLLocationManagerDelegate, AVAudioPlayerDelegate>
 {
+@private
     UIBarButtonItem *flipButton;
 	UIBarButtonItem *doneButton;
     
@@ -65,11 +67,16 @@ Copyright (C) 2010 Apple Inc. All Rights Reserved.
 
 	UIView *instructionsView;
     UISwitch *toggleBackgroundButton;
-    
+    UISwitch *toggleNavigationAccuracyButton;
+	UISwitch *toggleAudioButton;
+	
     CrumbPath *crumbs;
     CrumbPathView *crumbView;
     
     CLLocationManager *locationManager;
+	
+	AVAudioPlayer *audioPlayer;
+	BOOL okToPlaySound;
 }
 
 @property (nonatomic, retain) UIBarButtonItem *flipButton;
@@ -79,9 +86,14 @@ Copyright (C) 2010 Apple Inc. All Rights Reserved.
 @property (nonatomic, retain) IBOutlet MKMapView *map;
 
 @property (nonatomic, retain) IBOutlet UIView *instructionsView;
+
 @property (nonatomic, retain) IBOutlet UISwitch *toggleBackgroundButton;
+@property (nonatomic, retain) IBOutlet UISwitch *toggleNavigationAccuracyButton;
+@property (nonatomic, retain) IBOutlet UISwitch *toggleAudioButton;
 
 @property (nonatomic, retain) CLLocationManager *locationManager;
+
+@property (nonatomic, retain) AVAudioPlayer *audioPlayer;
 
 - (void)switchToBackgroundMode:(BOOL)background;
 - (IBAction)toggleBestAccuracy:(id)sender;
