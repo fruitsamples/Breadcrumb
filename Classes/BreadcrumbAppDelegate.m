@@ -1,7 +1,7 @@
 /*
      File: BreadcrumbAppDelegate.m 
  Abstract: Template delegate for the application. 
-  Version: 1.3 
+  Version: 1.5 
   
  Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple 
  Inc. ("Apple") in consideration of your agreement to the following 
@@ -91,7 +91,6 @@
     // called instead of applicationWillTerminate: when the user quits.
 }
 
-
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
     // inform our view controller we are entering the foreground
@@ -102,13 +101,11 @@
     // here you can undo many of the changes made on entering the background.
 }
 
-
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
     // Restart any tasks that were paused (or not yet started) while the application was inactive.
     // If the application was previously in the background, optionally refresh the user interface.
 }
-
 
 - (void)applicationWillTerminate:(UIApplication *)application
 {

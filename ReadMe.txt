@@ -17,7 +17,7 @@ How you configure Core Location services directly affects your device's battery 
 ===========================================================================
 BUILD REQUIREMENTS:
 
-iOS 4.2 SDK or later
+iOS 5.0 SDK or later
 
 ===========================================================================
 RUNTIME REQUIREMENTS:
@@ -38,6 +38,12 @@ BreadcrumbViewController
 
 ===========================================================================
 CHANGES FROM PREVIOUS VERSIONS:
+
+Version 1.5
+- Added support for MKUserTrackingMode.
+
+Version 1.4
+- Upgraded to use iOS 4.3 SDK, fixed UI issues with its settings screen.
 
 Version 1.3
 - Upgraded to iOS 4.2 SDK, fixed a bug in CrumbPath when allocating points, now checking for more GCC warnings.

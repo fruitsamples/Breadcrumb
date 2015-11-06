@@ -5,7 +5,7 @@
     Displays the user location along with the path traveled on an MKMapView.
     Implements the MKMapViewDelegate messages for tracking user location and managing overlays.
      
-  Version: 1.3 
+  Version: 1.5 
   
  Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple 
  Inc. ("Apple") in consideration of your agreement to the following 
@@ -67,20 +67,21 @@ static void interruptionListener(void *inClientData, UInt32 inInterruption);
 
 @synthesize flipButton, doneButton, containerView, map,
             instructionsView, toggleBackgroundButton, toggleNavigationAccuracyButton, toggleAudioButton,
-			locationManager, audioPlayer;
+            locationManager, audioPlayer, trackUserButton, trackUserLabel;
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
     
-	// initialize our AudioSession. this function has to be called once before calling any other AudioSession functions
+	// initialize our AudioSession -
+    // this function has to be called once before calling any other AudioSession functions
 	AudioSessionInitialize(NULL, NULL, interruptionListener, NULL);
 	
 	// set our default audio session state
 	[self setSessionActiveWithMixing:NO];
 	
 	NSURL *url = [NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"Hero" ofType:@"aiff"]];
-    self.audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:url error:nil];
+    audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:url error:nil];
     self.audioPlayer.delegate = self;	// so we know when the sound finishes playing
 	
 	okToPlaySound = YES;
@@ -100,8 +101,15 @@ static void interruptionListener(void *inClientData, UInt32 inInterruption);
 	// are intended to be used only while the device is plugged in.
     //
     BOOL navigationAccuracy = [self.toggleNavigationAccuracyButton isOn];
-	self.locationManager.desiredAccuracy = (navigationAccuracy ? kCLLocationAccuracyBestForNavigation : kCLLocationAccuracyBest);
+	self.locationManager.desiredAccuracy =
+        (navigationAccuracy ? kCLLocationAccuracyBestForNavigation : kCLLocationAccuracyBest);
     
+    // hide the prefs UI for user tracking mode - if MKMapView is not capable of it
+    if (![map respondsToSelector:@selector(setUserTrackingMode:animated:)])
+    {
+        trackUserButton.hidden = trackUserLabel.hidden = YES;
+    }
+
     [self.locationManager startUpdatingLocation];
     
     // create the container view which we will use for flip animation (centered horizontally)
@@ -121,7 +129,8 @@ static void interruptionListener(void *inClientData, UInt32 inInterruption);
 	
 	// create our done button as the nav bar's custom right view for the flipped view (used later)
 	doneButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone
-                                                               target:self action:@selector(flipAction:)];
+                                                               target:self
+                                                               action:@selector(flipAction:)];
 }
 
 - (void)viewDidUnload
@@ -144,6 +153,9 @@ static void interruptionListener(void *inClientData, UInt32 inInterruption);
 	self.toggleBackgroundButton = nil;
 	self.toggleNavigationAccuracyButton = nil;
 	self.toggleAudioButton = nil;
+    
+    self.trackUserButton = nil;
+    self.trackUserLabel = nil;
 }
 
 - (void)dealloc
@@ -156,6 +168,9 @@ static void interruptionListener(void *inClientData, UInt32 inInterruption);
     
     [flipButton release];
     [doneButton release];
+    
+    [trackUserButton release];
+    [trackUserLabel release];
     
     self.locationManager.delegate = nil;
     [locationManager release];
@@ -174,7 +189,7 @@ static void interruptionListener(void *inClientData, UInt32 inInterruption);
 #pragma mark -
 #pragma mark Actions
 
-// called them the app is moved to the background (user presses the home button) or to the foreground 
+// called when the app is moved to the background (user presses the home button) or to the foreground 
 //
 - (void)switchToBackgroundMode:(BOOL)background
 {
@@ -200,20 +215,42 @@ static void interruptionListener(void *inClientData, UInt32 inInterruption);
 {
     UISwitch *accuracySwitch = (UISwitch *)sender;
     if (accuracySwitch.isOn)
+    {
+        // better accuracy
         self.locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation;
+    }
     else
+    {
+        // normal accuracy
         self.locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+    }
+}
+
+- (IBAction)toggleTrackUserHeading:(id)sender
+{
+    UISwitch *trackHeaderSwitch = (UISwitch *)sender;
+    if (trackHeaderSwitch.isOn)
+    {
+        // track the user (the map follows the user's location and heading)
+        [map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
+    }
+    else
+    {
+        [map setUserTrackingMode:MKUserTrackingModeNone animated:NO];
+    }
 }
 
 // called when the user presses the 'i' icon to change the app settings
 //
 - (void)flipAction:(id)sender
 {
-	[UIView setAnimationDelegate:self];
-	//••[UIView setAnimationDidStopSelector:@selector(animationDidStop:animationIDfinished:finished:context:)];
 	[UIView beginAnimations:nil context:nil];
 	[UIView setAnimationDuration:0.75];
 	
+    // since the user can turn off user tracking by simply moving the map,
+    // we want to make sure our UISwitch reflects that change.
+    [trackUserButton setOn:([map userTrackingMode] == MKUserTrackingModeFollowWithHeading ? YES : NO)];
+    
 	[UIView setAnimationTransition:([self.map superview] ?
 									UIViewAnimationTransitionFlipFromLeft : UIViewAnimationTransitionFlipFromRight)
                            forView:containerView cache:YES];
@@ -314,7 +351,7 @@ static void interruptionListener(void *inClientData, UInt32 inInterruption);
 
 static void interruptionListener(void *inClientData, UInt32 inInterruption)
 {
-	printf("Session interrupted: --- %s ---",
+	NSLog(@"Session interrupted: --- %s ---",
 		   inInterruption == kAudioSessionBeginInterruption ? "Begin Interruption" : "End Interruption");
 }
 

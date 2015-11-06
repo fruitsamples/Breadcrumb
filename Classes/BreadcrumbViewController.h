@@ -5,7 +5,7 @@ Abstract:
     Displays the user location along with the path traveled on an MKMapView.
     Implements the MKMapViewDelegate messages for tracking user location and managing overlays.
     
- Version: 1.3
+ Version: 1.5
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Inc. ("Apple") in consideration of your agreement to the following
@@ -69,7 +69,10 @@ Copyright (C) 2011 Apple Inc. All Rights Reserved.
     UISwitch *toggleBackgroundButton;
     UISwitch *toggleNavigationAccuracyButton;
 	UISwitch *toggleAudioButton;
-	
+    
+	UISwitch *trackUserButton;
+    UILabel *trackUserLabel;
+    
     CrumbPath *crumbs;
     CrumbPathView *crumbView;
     
@@ -90,6 +93,9 @@ Copyright (C) 2011 Apple Inc. All Rights Reserved.
 @property (nonatomic, retain) IBOutlet UISwitch *toggleBackgroundButton;
 @property (nonatomic, retain) IBOutlet UISwitch *toggleNavigationAccuracyButton;
 @property (nonatomic, retain) IBOutlet UISwitch *toggleAudioButton;
+
+@property (nonatomic, retain) IBOutlet UISwitch *trackUserButton;
+@property (nonatomic, retain) IBOutlet UILabel *trackUserLabel;
 
 @property (nonatomic, retain) CLLocationManager *locationManager;
 

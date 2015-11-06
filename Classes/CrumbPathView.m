@@ -4,7 +4,7 @@
  CrumbPathView is an MKOverlayView subclass that displays a path that changes over time.
  This class also demonstrates the fastest way to convert a list of MKMapPoints into a CGPath for drawing in an overlay view.
   
-  Version: 1.3 
+  Version: 1.5 
   
  Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple 
  Inc. ("Apple") in consideration of your agreement to the following 
